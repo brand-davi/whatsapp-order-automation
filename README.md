@@ -1,951 +1,497 @@
 # WhatsApp Order Automation Engine
 
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat\&logo=dotnet)](https://dotnet.microsoft.com/)
-[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-512BD4?style=flat\&logo=dotnet)](https://dotnet.microsoft.com/apps/aspnet)
-[![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20Architecture-blue)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-[![OpenAI](https://img.shields.io/badge/AI-OpenAI%20API-412991?style=flat\&logo=openai)](https://openai.com/)
-[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat\&logo=postgresql)](https://www.postgresql.org/)
-[![WhatsApp](https://img.shields.io/badge/Integration-WhatsApp%20Cloud%20API-25D366?style=flat\&logo=whatsapp)](https://developers.facebook.com/docs/whatsapp/)
 
-SaaS multi-tenant para **automação conversacional de pedidos de restaurantes e marmitarias via WhatsApp**.
 
-O sistema recebe as mensagens dos clientes através da **WhatsApp Business Cloud API**, apresenta o cardápio vigente, interpreta pedidos escritos em linguagem natural, coleta automaticamente as informações necessárias para a entrega, valida os produtos contra o cardápio do restaurante e conduz o cliente até a confirmação do pedido.
 
-Após a finalização, o pedido é persistido e disponibilizado automaticamente para um **PrintAgent local**, responsável pela impressão da comanda em uma impressora térmica instalada no estabelecimento.
+\
 
-O objetivo é reduzir ao mínimo a intervenção humana durante o atendimento inicial, permitindo que a equipe do restaurante concentre seus esforços na **preparação e entrega dos pedidos**.
+Aplicação backend desenvolvida em **C# e .NET** para automatizar o atendimento e o processamento de pedidos realizados pelo WhatsApp de restaurantes.
+
+O sistema foi projetado para receber mensagens de clientes, interpretar pedidos escritos em linguagem natural, coletar informações ausentes, validar o pedido e transformar a conversa em dados estruturados que possam ser processados pelo restaurante sem necessidade de redigitação manual.
 
 ---
 
-## 🎯 Problema
+## 🎯 O Problema
 
-Restaurantes de bairro e marmitarias frequentemente recebem diversos pedidos simultaneamente pelo WhatsApp.
+Pequenos restaurantes frequentemente recebem pedidos diretamente pelo WhatsApp.
 
-Em horários de pico, isso pode resultar em:
+Embora esse processo seja conveniente para o cliente, ele gera diversas tarefas repetitivas para a equipe do estabelecimento, como:
 
-* demora para responder clientes;
-* clientes sem atendimento;
-* erros na transcrição dos pedidos;
-* repetição constante das mesmas perguntas;
-* necessidade de copiar manualmente pedidos para comandas;
-* perda de vendas;
-* sobrecarga da equipe.
+* ler manualmente cada conversa;
+* identificar produtos e quantidades solicitadas;
+* perguntar informações que ficaram faltando;
+* coletar o endereço de entrega;
+* confirmar a forma de pagamento;
+* verificar a necessidade de troco em pagamentos em dinheiro;
+* transcrever manualmente o pedido;
+* encaminhar o pedido para produção ou impressão.
 
-O **WhatsApp Order Automation Engine** automatiza esse fluxo desde a primeira mensagem até a geração da comanda.
-
----
-
-## 🔄 Fluxo Principal
-
-```text
-Cliente envia mensagem
-        ↓
-Sistema identifica o restaurante e a conversa
-        ↓
-Envia saudação + cardápio do dia
-        ↓
-Cliente escreve seu pedido naturalmente
-        ↓
-IA interpreta produtos, quantidades e tamanhos
-        ↓
-Backend valida os dados contra o cardápio
-        ↓
-Sistema identifica informações ausentes
-        ↓
-Pergunta somente o necessário:
- ├── bebida
- ├── endereço
- ├── forma de pagamento
- └── troco, quando necessário
-        ↓
-Sistema calcula e apresenta o resumo
-        ↓
-Cliente confirma
-        ↓
-Pedido é finalizado
-        ↓
-PrintJob é criado
-        ↓
-PrintAgent recebe a notificação
-        ↓
-Comanda é impressa
-        ↓
-Equipe prepara o pedido
-```
+O objetivo deste projeto é automatizar esse fluxo, preservando para o cliente a simplicidade de realizar um pedido através de uma conversa pelo WhatsApp.
 
 ---
 
-## 💬 Exemplo de Atendimento
+## 💡 Solução
+
+A aplicação funciona como uma camada de automação entre o cliente e a operação do restaurante.
+
+Um fluxo típico de atendimento é:
 
 ```text
-Cliente:
-Boa tarde!
-
-Bot:
-Boa tarde! Tudo bem? 👋
-
-Segue nosso cardápio de hoje:
-
-[Imagem do cardápio]
-
-Fique à vontade para fazer seu pedido.
+Cliente envia uma mensagem
+             ↓
+      WhatsApp Cloud API
+             ↓
+      Webhook da aplicação
+             ↓
+   Conversa é identificada
+             ↓
+Mensagem do cliente é interpretada
+             ↓
+Dados do pedido são extraídos
+             ↓
+Informações ausentes são identificadas
+             ↓
+Sistema realiza novas perguntas
+             ↓
+Resumo do pedido é apresentado
+             ↓
+      Cliente confirma
+             ↓
+       Pedido é criado
+             ↓
+ Pedido é enviado para impressão
 ```
 
-O cliente pode escrever naturalmente:
-
-```text
-Quero duas lasanhas pequenas
-e uma feijoada grande
-```
-
-A mensagem é interpretada internamente como:
-
-```json
-{
-  "items": [
-    {
-      "product": "Lasanha Bolonhesa",
-      "variant": "P",
-      "quantity": 2
-    },
-    {
-      "product": "Feijoada Completa",
-      "variant": "G",
-      "quantity": 1
-    }
-  ]
-}
-```
-
-Após validar os produtos:
-
-```text
-Bot:
-Entendi 👍
-
-2x Lasanha P
-1x Feijoada G
-
-Gostaria de alguma bebida?
-```
-
-O cliente continua:
-
-```text
-Uma Coca 2L.
-Meu endereço é Rua Exemplo, 123.
-Vou pagar no cartão.
-```
-
-Como endereço e pagamento já foram informados, o sistema **não pergunta novamente**.
-
-Ao final:
-
-```text
-Confira seu pedido:
-
-2x Lasanha P ........ R$ 40,00
-1x Feijoada G ....... R$ 60,00
-1x Coca-Cola 2L ..... R$ 18,00
-
-Subtotal ............ R$ 118,00
-Taxa de entrega ..... R$  0,00
-Total ............... R$ 118,00
-
-Entrega:
-Rua Exemplo, 123
-
-Pagamento:
-Cartão
-
-[ Finalizar pedido ]
-[ Alterar pedido ]
-```
-
-Após a confirmação, o pedido é persistido e enviado para impressão.
+O objetivo é permitir que a equipe do restaurante receba um pedido estruturado sem precisar transcrever manualmente as informações da conversa.
 
 ---
 
-# 📐 Arquitetura
+## ✨ Principais Funcionalidades
 
-O projeto utiliza os princípios da **Clean Architecture**, mantendo as regras de negócio independentes de banco de dados, WhatsApp, inteligência artificial e hardware de impressão.
+O sistema está sendo projetado para suportar:
 
-```text
-                         ┌─────────────────────┐
-                         │       Domain        │
-                         │                     │
-                         │ Orders              │
-                         │ Products            │
-                         │ Menus               │
-                         │ Conversations       │
-                         │ Restaurants         │
-                         └─────────▲───────────┘
-                                   │
-                         ┌─────────┴───────────┐
-                         │     Application     │
-                         │                     │
-                         │ Use Cases           │
-                         │ Ports / Interfaces  │
-                         │ Orchestration       │
-                         └──────▲────────▲─────┘
-                                │        │
-                ┌───────────────┘        └───────────────┐
-                │                                        │
-       ┌────────┴─────────┐                    ┌─────────┴────────┐
-       │ Infrastructure   │                    │       API        │
-       │                  │                    │                  │
-       │ EF Core          │                    │ Webhooks         │
-       │ PostgreSQL       │                    │ REST API         │
-       │ OpenAI           │                    │ SignalR Hub      │
-       │ WhatsApp         │                    │ Authentication   │
-       └──────────────────┘                    └──────────────────┘
-                                                        │
-                                                        │ SignalR
-                                                        ▼
-                                                ┌───────────────┐
-                                                │  PrintAgent   │
-                                                │     .NET      │
-                                                └───────┬───────┘
-                                                        │
-                                                        ▼
-                                                Impressora térmica
-```
+* recebimento de mensagens através do WhatsApp do restaurante;
+* resposta automática aos clientes;
+* envio do cardápio vigente;
+* realização de pedidos diretamente pela conversa;
+* interpretação de pedidos escritos em linguagem natural;
+* extração de informações estruturadas das mensagens do cliente;
+* identificação de informações ausentes necessárias para concluir o pedido;
+* perguntas sobre bebidas e complementos;
+* coleta do endereço de entrega;
+* coleta da forma de pagamento;
+* tratamento de pagamentos em dinheiro e necessidade de troco;
+* apresentação de um resumo antes da confirmação;
+* confirmação do pedido pelo cliente;
+* criação automática do pedido;
+* envio do pedido concluído para o fluxo de impressão;
+* redução da necessidade de transcrição manual pela equipe do restaurante.
 
 ---
 
-## 🧱 Estrutura da Solution
+## 📋 Requisitos Funcionais
 
-```text
-WhatsAppOrderAutomation.sln
-
-src/
-│
-├── WhatsAppOrderAutomation.Domain/
-│
-├── WhatsAppOrderAutomation.Application/
-│
-├── WhatsAppOrderAutomation.Infrastructure/
-│
-├── WhatsAppOrderAutomation.Api/
-│
-└── WhatsAppOrderAutomation.PrintAgent/
-│
-└── tests/
-    │
-    ├── WhatsAppOrderAutomation.Domain.Tests/
-    ├── WhatsAppOrderAutomation.Application.Tests/
-    └── WhatsAppOrderAutomation.IntegrationTests/
-```
-
-Todos os projetos utilizam:
-
-```text
-Target Framework: net10.0
-Language: C# 14
-```
+| ID       | Requisito                                                                              |
+| -------- | -------------------------------------------------------------------------------------- |
+| **RF01** | Receber mensagens através do WhatsApp da loja.                                         |
+| **RF02** | Responder automaticamente ao cliente.                                                  |
+| **RF03** | Enviar a imagem do cardápio vigente.                                                   |
+| **RF04** | Permitir que o cliente realize o pedido através da conversa.                           |
+| **RF05** | Interpretar pedidos escritos em linguagem natural.                                     |
+| **RF06** | Identificar informações ainda ausentes no pedido.                                      |
+| **RF07** | Perguntar ao cliente sobre bebidas ou complementos.                                    |
+| **RF08** | Coletar o endereço de entrega.                                                         |
+| **RF09** | Coletar a forma de pagamento.                                                          |
+| **RF10** | Quando o pagamento for em dinheiro, coletar informações sobre troco quando necessário. |
+| **RF11** | Apresentar um resumo do pedido antes da finalização.                                   |
+| **RF12** | Permitir que o cliente confirme e finalize o pedido.                                   |
+| **RF13** | Criar automaticamente o pedido após a confirmação.                                     |
+| **RF14** | Enviar o pedido concluído para o fluxo de impressão.                                   |
+| **RF15** | Evitar a necessidade de redigitação manual das informações pela equipe do restaurante. |
 
 ---
 
-# 🧩 Domain
+## 🧠 Interpretação de Pedidos em Linguagem Natural
 
-O `Domain` contém as regras centrais do negócio e não possui dependência de:
+O cliente não precisa seguir obrigatoriamente um formato rígido de comandos.
 
-* Meta;
-* WhatsApp;
-* OpenAI;
-* PostgreSQL;
-* Entity Framework Core;
-* SignalR;
-* impressoras.
-
-Estrutura inicial:
+Por exemplo, ele poderia enviar:
 
 ```text
-Domain/
-│
-├── Restaurants/
-│   ├── Restaurant.cs
-│   └── RestaurantSettings.cs
-│
-├── Catalog/
-│   ├── Product.cs
-│   ├── ProductVariant.cs
-│   ├── Menu.cs
-│   └── MenuItem.cs
-│
-├── Customers/
-│   └── Customer.cs
-│
-├── Conversations/
-│   ├── Conversation.cs
-│   └── ConversationState.cs
-│
-├── Orders/
-│   ├── Order.cs
-│   ├── OrderItem.cs
-│   ├── OrderStatus.cs
-│   └── PaymentMethod.cs
-│
-├── Printing/
-│   ├── PrintJob.cs
-│   └── PrintJobStatus.cs
-│
-└── Common/
-    ├── Entity.cs
-    ├── AggregateRoot.cs
-    └── ValueObjects/
-        └── Address.cs
+Quero duas marmitas médias,
+uma de frango e uma de carne.
+
+Entrega na Rua Principal, 120.
+
+Vou pagar no Pix.
 ```
+
+A aplicação deve ser capaz de transformar essa mensagem em informações estruturadas semelhantes a:
+
+```text
+Pedido
+├── Itens
+│   ├── Marmita Média - Frango x1
+│   └── Marmita Média - Carne x1
+│
+├── Endereço de entrega
+│   └── Rua Principal, 120
+│
+├── Forma de pagamento
+│   └── Pix
+│
+└── Informações ausentes
+    └── Horário desejado
+```
+
+Em vez de reiniciar todo o processo, o sistema identifica apenas as informações ausentes e continua a conversa a partir daquele ponto.
 
 ---
 
-# 🍽️ Catálogo e Cardápio
+## 🏗️ Arquitetura
 
-O sistema diferencia o **catálogo do restaurante** do **cardápio vigente**.
-
-Um produto pode existir no restaurante sem necessariamente estar disponível naquele dia.
-
-Exemplo:
+O projeto segue princípios de **Clean Architecture**, separando as regras de negócio da infraestrutura e das integrações externas.
 
 ```text
-Produto
-└── Lasanha Bolonhesa
-    ├── P → R$ 20,00
-    ├── M → R$ 25,00
-    └── G → R$ 30,00
+┌──────────────────────────────┐
+│        Presentation          │
+│   Webhooks / HTTP Endpoints  │
+└───────────────┬──────────────┘
+                │
+┌───────────────▼──────────────┐
+│         Application          │
+│ Casos de Uso / Orquestração  │
+└───────────────┬──────────────┘
+                │
+┌───────────────▼──────────────┐
+│            Domain            │
+│ Entidades / Regras de Negócio│
+└───────────────▲──────────────┘
+                │
+┌───────────────┴──────────────┐
+│        Infrastructure        │
+│ Banco / WhatsApp / IA        │
+│ Impressão / APIs Externas    │
+└──────────────────────────────┘
 ```
 
-Bebidas seguem a mesma estrutura:
-
-```text
-Coca-Cola
-├── Lata  → R$ 7,00
-├── 600ml → R$ 10,00
-└── 2L    → R$ 18,00
-```
-
-O cardápio diário determina quais produtos estão efetivamente disponíveis.
-
-```text
-Menu
-├── Date
-├── ImageUrl
-└── Items
-```
-
-Dessa forma, a imagem tradicional do cardápio continua sendo enviada pelo WhatsApp, enquanto o backend possui dados estruturados para validação dos pedidos.
+Essa separação permite que tecnologias externas sejam alteradas sem acoplar diretamente as principais regras de negócio ao WhatsApp, ao provedor de IA, ao banco de dados ou à infraestrutura de impressão.
 
 ---
 
-# 🛒 Pedido
+## 🧩 Modelagem de Domínio
 
-O pedido é um dos principais agregados do domínio.
+O domínio foi dividido de acordo com as principais responsabilidades da operação do restaurante.
+
+```text
+Domain
+├── Catalog
+├── Conversations
+├── Customers
+├── Orders
+├── Printing
+└── Restaurants
+```
+
+### Restaurants
+
+Contém as informações relacionadas ao restaurante e suas configurações operacionais.
+
+Exemplos:
+
+```text
+Restaurant
+RestaurantSettings
+```
+
+### Catalog
+
+Representa a estrutura do cardápio e os produtos disponíveis para venda.
+
+Exemplos:
+
+```text
+MenuCategory
+MenuItem
+MenuItemVariant
+```
+
+### Customers
+
+Representa os clientes que interagem com o restaurante através do WhatsApp.
+
+### Conversations
+
+Responsável pelo contexto e pelo estado das conversas realizadas pelo WhatsApp.
+
+O contexto da conversa permite compreender se o cliente está:
+
+* iniciando um pedido;
+* escolhendo itens;
+* fornecendo informações ausentes;
+* informando o endereço;
+* escolhendo uma forma de pagamento;
+* revisando o pedido;
+* confirmando o pedido.
+
+### Orders
+
+Contém as principais regras de negócio relacionadas aos pedidos.
+
+Alguns dos conceitos presentes nesse domínio incluem:
 
 ```text
 Order
-├── Restaurant
-├── Customer
-│
-├── Items
-│   ├── Product
-│   ├── Variant
-│   ├── Quantity
-│   └── UnitPrice
-│
-├── DeliveryAddress
-├── PaymentMethod
-├── ChangeFor
-├── DeliveryFee
-├── Status
-├── CreatedAt
-└── ConfirmedAt
+OrderItem
+OrderStatus
+OrderType
+PaymentMethod
 ```
 
-Os itens armazenam um **snapshot do preço e descrição no momento da compra**.
+### Printing
 
-Assim, alterações futuras no catálogo não modificam pedidos históricos.
+Responsável pelo fluxo de envio dos pedidos confirmados para a infraestrutura de impressão do restaurante.
 
 ---
 
-## Estados do Pedido
+## 🔄 Estado da Conversa
+
+Uma conversa no WhatsApp não é tratada simplesmente como um conjunto de mensagens isoladas.
+
+A aplicação mantém o contexto ao longo de toda a interação.
+
+Conceitualmente:
 
 ```text
-Draft
-  ↓
-AwaitingConfirmation
-  ↓
+Started
+   ↓
+WaitingForItems
+   ↓
+WaitingForAddress
+   ↓
+WaitingForPayment
+   ↓
+WaitingForAdditionalInformation
+   ↓
+WaitingForConfirmation
+   ↓
 Confirmed
 ```
 
-Fluxos alternativos:
+A transição entre os estados depende das informações que o cliente já forneceu.
+
+Por exemplo, se o cliente informar os itens, o endereço e a forma de pagamento na primeira mensagem, o sistema não deverá perguntar novamente essas informações.
+
+---
+
+## 🤖 Papel da Inteligência Artificial
+
+O modelo de linguagem é utilizado como um componente da aplicação, e não como responsável por controlar todo o fluxo de negócio.
+
+Sua principal responsabilidade é auxiliar na transformação de mensagens não estruturadas do cliente em informações que possam ser processadas pela aplicação.
 
 ```text
-Draft
-  ↓
-Cancelled
+Mensagem não estruturada
+          ↓
+Processamento de linguagem natural
+          ↓
+Informações estruturadas
+          ↓
+ Validação pela aplicação
+          ↓
+    Regras de negócio
 ```
 
-Estados iniciais:
+As decisões de negócio permanecem sob responsabilidade da aplicação.
 
-```csharp
-public enum OrderStatus
-{
-    Draft = 1,
-    AwaitingConfirmation = 2,
-    Confirmed = 3,
-    Cancelled = 4
-}
-```
-
----
-
-# 💬 Conversation Engine
-
-Cada cliente possui sua própria conversa ativa.
-
-Isso permite que dezenas de clientes sejam atendidos simultaneamente sem compartilhar estado.
+Por exemplo, a IA pode identificar que o cliente informou:
 
 ```text
-Cliente A → Conversation A → Order A
-Cliente B → Conversation B → Order B
-Cliente C → Conversation C → Order C
+"Vou pagar em dinheiro e preciso de troco para 100."
 ```
 
-Estados iniciais:
-
-```csharp
-public enum ConversationState
-{
-    Started = 1,
-    WaitingForOrder = 2,
-    CollectingInformation = 3,
-    WaitingForConfirmation = 4,
-    Completed = 5
-}
-```
-
-O Conversation Engine é responsável por determinar:
-
-* o estado atual da conversa;
-* qual pedido está sendo montado;
-* quais informações já foram fornecidas;
-* quais informações ainda estão ausentes;
-* qual deve ser a próxima resposta.
-
-O sistema deve perguntar **somente aquilo que ainda estiver faltando**.
-
----
-
-# 🤖 Inteligência Artificial
-
-A IA é utilizada como uma camada de **interpretação de linguagem natural**.
-
-Ela não representa a fonte da verdade do sistema.
+e extrair dados semelhantes a:
 
 ```text
-Cliente
-   ↓
-"duas feijuca grande e uma coca 2 litros"
-   ↓
-LLM
-   ↓
-Structured Output
-   ↓
-Backend .NET
-   ↓
-Validação no banco
+PaymentMethod: Cash
+ChangeFor: 100.00
 ```
 
-Princípio:
-
-> **A IA interpreta. O domínio valida.**
-
-A IA pode identificar:
-
-* produtos;
-* tamanhos;
-* quantidades;
-* bebidas;
-* endereço;
-* forma de pagamento;
-* valor para troco;
-* intenção de adicionar/remover itens;
-* intenção de finalizar o pedido.
-
-O backend continua responsável por validar:
-
-* existência do produto;
-* disponibilidade no cardápio;
-* variantes disponíveis;
-* preço;
-* regras de pagamento;
-* regras de entrega;
-* consistência do pedido.
-
-A integração é abstraída através de uma interface:
-
-```csharp
-public interface IOrderMessageInterpreter
-{
-    Task<OrderMessageInterpretation> InterpretAsync(
-        string message,
-        OrderContext context,
-        CancellationToken cancellationToken);
-}
-```
-
-Dessa forma, o domínio não depende diretamente de um modelo ou fornecedor específico.
+A aplicação é então responsável por validar e utilizar essas informações de acordo com as regras definidas no domínio.
 
 ---
 
-# 📱 WhatsApp
+## 🛠️ Tecnologias
 
-A integração com o WhatsApp é realizada através da **WhatsApp Business Cloud API**.
+### Backend
 
-Entrada:
+* C#
+* .NET 10
+* ASP.NET Core
+* APIs REST
+
+### Arquitetura e Design
+
+* Clean Architecture
+* Programação Orientada a Objetos
+* Modelagem de Domínio
+* Separação de Responsabilidades
+* Injeção de Dependência
+
+### Persistência
+
+* Entity Framework Core
+* Banco de Dados Relacional
+* SQL
+
+### Integrações Externas
+
+* WhatsApp Cloud API
+* API de LLM
+* Infraestrutura de impressão
+
+### Desenvolvimento
+
+* Git
+* GitHub
+
+---
+
+## 🧪 Conceitos Aplicados no Projeto
+
+Este projeto utiliza e exercita diversos conceitos de desenvolvimento de software, incluindo:
+
+* Programação Orientada a Objetos;
+* classes e objetos;
+* encapsulamento;
+* modelagem de domínio;
+* manipulação de objetos e coleções;
+* estruturas condicionais;
+* estruturas de repetição;
+* tratamento de exceções;
+* desenvolvimento de APIs REST;
+* consumo de APIs externas;
+* programação assíncrona;
+* injeção de dependência;
+* persistência de dados;
+* SQL e bancos de dados relacionais;
+* versionamento com Git;
+* modelagem de regras de negócio;
+* separação de responsabilidades.
+
+---
+
+## 📁 Estrutura do Projeto
+
+A solution segue uma estrutura em camadas semelhante a:
 
 ```text
-WhatsApp
-    ↓
-Webhook
-    ↓
-POST /webhooks/whatsapp
-    ↓
-ASP.NET Core
+src/
+├── Domain/
+│   ├── Catalog/
+│   ├── Conversations/
+│   ├── Customers/
+│   ├── Orders/
+│   ├── Printing/
+│   └── Restaurants/
+│
+├── Application/
+│
+├── Infrastructure/
+│
+└── WebApi/
 ```
 
-Saída:
-
-```text
-Application
-    ↓
-IWhatsAppGateway
-    ↓
-WhatsApp Cloud API
-```
-
-Interface:
-
-```csharp
-public interface IWhatsAppGateway
-{
-    Task SendTextAsync(...);
-
-    Task SendImageAsync(...);
-
-    Task SendInteractiveMessageAsync(...);
-}
-```
-
-A camada de domínio não possui conhecimento sobre DTOs ou contratos da Meta.
+Cada camada possui uma responsabilidade específica, reduzindo o acoplamento entre as regras de negócio e os detalhes de infraestrutura.
 
 ---
 
-# 🖨️ Impressão de Comandas
+## 🚀 Como Executar
 
-Quando um pedido é confirmado, o sistema cria um `PrintJob`.
+Clone o repositório:
 
-```text
-Order
-Status = Confirmed
-        ↓
-PrintJob
-Status = Pending
+```bash
+git clone <repository-url>
 ```
 
-O trabalho de impressão é persistido antes de qualquer comunicação com a impressora.
+Acesse o diretório do projeto:
 
-Isso evita a perda de pedidos caso:
-
-* o computador da loja esteja desligado;
-* o PrintAgent esteja desconectado;
-* a internet da loja caia;
-* a impressora esteja indisponível;
-* ocorra algum erro temporário durante a impressão.
-
-Estados:
-
-```csharp
-public enum PrintJobStatus
-{
-    Pending = 1,
-    Processing = 2,
-    Printed = 3,
-    Failed = 4
-}
+```bash
+cd <repository-directory>
 ```
+
+Restaure as dependências:
+
+```bash
+dotnet restore
+```
+
+Compile a solution:
+
+```bash
+dotnet build
+```
+
+Execute a aplicação:
+
+```bash
+dotnet run
+```
+
+As integrações externas exigem suas respectivas credenciais e configurações, como:
+
+* conexão com banco de dados;
+* WhatsApp Cloud API;
+* provedor de IA;
+* infraestrutura de impressão.
+
+Credenciais e informações sensíveis não devem ser adicionadas ao repositório.
 
 ---
 
-## PrintAgent
+## 🗺️ Roadmap
 
-O `PrintAgent` é um **Worker Service .NET 10** executado localmente no estabelecimento.
+O projeto está em desenvolvimento ativo.
 
-Responsabilidades:
+Próximas etapas planejadas:
 
-```text
-SeuZe.PrintAgent
-
-1. Autenticar-se no SaaS
-2. Manter conexão com SignalR
-3. Receber notificação de novo PrintJob
-4. Buscar os dados da comanda
-5. Enviar os comandos para a impressora
-6. Confirmar sucesso da impressão
-7. Reportar falhas
-```
-
-O SignalR funciona como mecanismo de **notificação em tempo real**.
-
-O `PrintJob` persistido continua sendo a fonte da verdade.
-
-```text
-Pedido confirmado
-       ↓
-PrintJob salvo no banco
-       ↓
-SignalR avisa PrintAgent
-       ↓
-PrintAgent imprime
-       ↓
-ACK
-       ↓
-PrintJob = Printed
-```
-
-Caso a conexão em tempo real falhe, o agente poderá consultar trabalhos pendentes posteriormente.
+* [x] Concluir a modelagem do domínio
+* [ ] Configurar a persistência de dados
+* [ ] Implementar o webhook do WhatsApp
+* [ ] Implementar o envio de mensagens pelo WhatsApp
+* [ ] Implementar o gerenciamento de estado das conversas
+* [ ] Implementar a interpretação de pedidos em linguagem natural
+* [ ] Implementar a identificação de informações ausentes
+* [ ] Implementar a validação dos pedidos
+* [ ] Implementar o fluxo de confirmação
+* [ ] Implementar a persistência dos pedidos
+* [ ] Implementar o fluxo de impressão
+* [ ] Adicionar testes automatizados
+* [ ] Melhorar observabilidade e tratamento de erros
 
 ---
 
-# 🧾 Exemplo de Comanda
+## 📌 Status do Projeto
 
-```text
-================================
-        SEU ZÉ MARMITARIA
-================================
+**Em desenvolvimento.**
 
-PEDIDO #00142
-14/08/2026 - 12:43
-
---------------------------------
-
-2x LASANHA BOLONHESA - P
-1x FEIJOADA COMPLETA - G
-1x COCA-COLA - 2L
-
---------------------------------
-
-ENDEREÇO
-
-Rua Exemplo, 123
-
---------------------------------
-
-PAGAMENTO
-
-Cartão
-
---------------------------------
-
-TOTAL
-
-R$ 118,00
-
-================================
-```
+O foco atual está na modelagem do domínio e na definição das regras de negócio necessárias para transformar conversas realizadas pelo WhatsApp em pedidos estruturados de forma confiável.
 
 ---
 
-# 🗄️ Persistência
+## 🎯 Objetivo do Projeto
 
-Banco de dados:
+Este projeto surgiu a partir de uma **necessidade real de negócio** e está sendo desenvolvido como uma solução backend completa, e não apenas como um protótipo de chatbot.
 
-**PostgreSQL**
+Seus principais objetivos técnicos são aplicar e aprofundar conhecimentos relacionados a:
 
-ORM:
+* arquitetura de software;
+* modelagem de domínio;
+* integrações com APIs;
+* fluxos conversacionais;
+* processamento de linguagem natural;
+* implementação de regras de negócio;
+* persistência de dados;
+* desenvolvimento de aplicações sustentáveis e organizadas em C#/.NET.
 
-**Entity Framework Core 10**
-
-Principais agregados persistidos:
-
-```text
-Restaurants
-Products
-ProductVariants
-Menus
-MenuItems
-Customers
-Conversations
-Orders
-OrderItems
-PrintJobs
-```
-
-Todas as entidades relacionadas ao negócio possuem `RestaurantId` quando necessário para garantir o isolamento entre tenants.
-
----
-
-# 🏢 Multi-Tenancy
-
-O projeto é desenvolvido desde o início como SaaS multi-tenant.
-
-```text
-                    SaaS
-                     │
-        ┌────────────┼────────────┐
-        ↓            ↓            ↓
- Restaurante A  Restaurante B  Restaurante C
-        │            │            │
-    Clientes      Clientes      Clientes
-    Cardápios     Cardápios     Cardápios
-    Pedidos       Pedidos       Pedidos
-    Impressoras   Impressoras   Impressoras
-```
-
-Cada restaurante possui seus próprios:
-
-* produtos;
-* preços;
-* cardápios;
-* clientes;
-* conversas;
-* pedidos;
-* configurações;
-* integração com WhatsApp;
-* dispositivos de impressão.
-
----
-
-# 📡 Fluxo Técnico
-
-```mermaid
-sequenceDiagram
-    autonumber
-
-    actor Cliente
-
-    participant WA as WhatsApp Cloud API
-    participant API as ASP.NET Core 10 API
-    participant CE as Conversation Engine
-    participant AI as LLM
-    participant DB as PostgreSQL / EF Core 10
-    participant HUB as SignalR Hub
-    participant PA as PrintAgent
-    participant PR as Impressora Térmica
-
-    Cliente->>WA: "Quero 2 lasanhas P e 1 feijoada G"
-    WA->>API: POST /webhooks/whatsapp
-
-    API->>CE: ProcessIncomingMessage
-
-    CE->>DB: Recupera Conversation + Order + Menu
-
-    CE->>AI: Interpreta mensagem + contexto
-    AI-->>CE: Structured Output
-
-    CE->>DB: Valida produtos, variantes e disponibilidade
-    CE->>DB: Atualiza Order
-
-    CE->>WA: Solicita informações faltantes
-
-    Note over Cliente,WA: Cliente fornece endereço, pagamento etc.
-
-    Cliente->>WA: Finalizar pedido
-    WA->>API: Evento de confirmação
-
-    API->>CE: ConfirmOrder
-    CE->>DB: Order = Confirmed
-    CE->>DB: Cria PrintJob = Pending
-
-    API->>HUB: OrderReadyForPrinting
-    HUB-->>PA: Novo PrintJob disponível
-
-    PA->>API: Obtém dados da comanda
-    API-->>PA: PrintJob + Order
-
-    PA->>PR: ESC/POS / Driver de impressão
-
-    PA->>API: Confirma impressão
-    API->>DB: PrintJob = Printed
-```
-
----
-
-# ⚙️ Stack
-
-| Camada            | Tecnologia                    |
-| ----------------- | ----------------------------- |
-| Runtime           | .NET 10                       |
-| Linguagem         | C# 14                         |
-| Backend           | ASP.NET Core 10               |
-| ORM               | Entity Framework Core 10      |
-| Banco             | PostgreSQL                    |
-| Realtime          | SignalR                       |
-| WhatsApp          | WhatsApp Business Cloud API   |
-| IA                | LLM via provider configurável |
-| Structured Output | JSON / Schema estruturado     |
-| PrintAgent        | .NET 10 Worker Service        |
-| Impressão         | ESC/POS / driver compatível   |
-| Testes            | xUnit                         |
-| API Docs          | OpenAPI                       |
-| Containerização   | Docker                        |
-
----
-
-# 🧪 Estratégia de Desenvolvimento
-
-A implementação será realizada de dentro para fora:
-
-```text
-1. Domain
-      ↓
-2. Testes unitários
-      ↓
-3. Application
-      ↓
-4. Persistência / EF Core
-      ↓
-5. API
-      ↓
-6. WhatsApp Cloud API
-      ↓
-7. IA
-      ↓
-8. SignalR
-      ↓
-9. PrintAgent
-      ↓
-10. Impressão física
-```
-
-O primeiro objetivo é permitir que o domínio execute integralmente:
-
-```text
-Criar restaurante
-        ↓
-Cadastrar produtos
-        ↓
-Criar cardápio
-        ↓
-Criar cliente
-        ↓
-Criar pedido
-        ↓
-Adicionar itens
-        ↓
-Definir endereço
-        ↓
-Definir pagamento
-        ↓
-Definir troco, se necessário
-        ↓
-Calcular valores
-        ↓
-Validar pedido
-        ↓
-Confirmar pedido
-        ↓
-Criar PrintJob
-```
-
-Tudo isso deverá funcionar independentemente de WhatsApp, IA ou impressora física.
-
----
-
-# 🚧 Requisitos em Levantamento
-
-Algumas regras comerciais ainda serão definidas junto aos primeiros restaurantes atendidos.
-
-Entre elas:
-
-* cálculo da taxa de entrega;
-* entrega versus retirada;
-* horário de funcionamento;
-* comportamento fora do horário;
-* disponibilidade de produtos durante o dia;
-* cancelamento e alteração de pedidos;
-* confirmação do restaurante;
-* política de pedidos não atendidos;
-* modelos de impressoras oficialmente suportados.
-
-Essas regras serão implementadas de forma configurável sempre que possível, evitando regras específicas de um único restaurante no core do produto.
-
----
-
-# 🗺️ Roadmap
-
-### Fase 1 — Core
-
-* [ ] Domain Model
-* [ ] Produtos e variantes
-* [ ] Cardápios
-* [ ] Clientes
-* [ ] Pedidos
-* [ ] Conversation State Machine
-* [ ] Testes unitários
-
-### Fase 2 — Persistência
-
-* [ ] PostgreSQL
-* [ ] EF Core 10
-* [ ] Migrations
-* [ ] Multi-tenancy
-
-### Fase 3 — WhatsApp
-
-* [ ] Webhook
-* [ ] Recebimento de mensagens
-* [ ] Envio de textos
-* [ ] Envio de imagens
-* [ ] Mensagens interativas
-
-### Fase 4 — Conversação inteligente
-
-* [ ] Integração com LLM
-* [ ] Structured Outputs
-* [ ] Parsing de pedidos
-* [ ] Validação contra cardápio
-* [ ] Identificação de dados faltantes
-* [ ] Alteração de pedidos
-
-### Fase 5 — Finalização
-
-* [ ] Resumo do pedido
-* [ ] Cálculo do total
-* [ ] Confirmação
-* [ ] Persistência definitiva
-
-### Fase 6 — Impressão
-
-* [ ] PrintJob
-* [ ] SignalR
-* [ ] PrintAgent
-* [ ] Retry de impressão
-* [ ] ESC/POS
-* [ ] Comanda térmica
-
-### Fase 7 — SaaS
-
-* [ ] Painel administrativo
-* [ ] Cadastro de restaurante
-* [ ] Gestão de produtos
-* [ ] Gestão de cardápio diário
-* [ ] Configuração do WhatsApp
-* [ ] Configuração de impressão
-* [ ] Gestão de usuários
-* [ ] Métricas e acompanhamento de pedidos
-
----
-
-## 📌 Princípios do Projeto
-
-1. **IA interpreta; o domínio valida.**
-2. **Pedidos nunca dependem exclusivamente do estado da conversa no LLM.**
-3. **Preços são definidos pelo backend, nunca pela IA.**
-4. **Pedidos confirmados devem ser persistidos antes da impressão.**
-5. **Uma falha de impressão nunca deve causar perda do pedido.**
-6. **Cada restaurante possui seus dados isolados.**
-7. **Integrações externas não devem contaminar o domínio.**
-8. **O atendimento deve exigir o mínimo possível de intervenção humana.**
-9. **O sistema pergunta somente informações que ainda estiverem faltando.**
-10. **A automação deve reduzir trabalho operacional, não apenas transferi-lo do papel para uma tela.**
+O objetivo final é proporcionar um fluxo no qual o pedido possa sair da mensagem enviada pelo cliente no WhatsApp e chegar à operação do restaurante com o mínimo possível de intervenção manual.
