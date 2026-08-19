@@ -3,7 +3,6 @@
 
 
 
-\
 
 Aplicação backend desenvolvida em **C# e .NET** para automatizar o atendimento e o processamento de pedidos realizados pelo WhatsApp de restaurantes.
 
