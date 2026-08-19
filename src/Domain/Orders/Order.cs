@@ -36,7 +36,9 @@ namespace Domain.Orders
         public DateTime? ConfirmedAt { get; set; }
 
         public bool? NeedsChange { get; set; }
-        public decimal? ChangeForAmount => 
+
+        public decimal? ChangeForAmount { get; set; }
+        public decimal? ChangeAmount => 
             NeedsChange == true && 
             ChangeForAmount.HasValue && 
             Total.HasValue 

@@ -10,7 +10,7 @@ namespace Domain.Customers
         public Guid RestaurantId { get; set; }
         public string WhatsAppNumber { get; set; } = string.Empty;
         public string? Name { get; set; }
-        public bool IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; }
     }
 }

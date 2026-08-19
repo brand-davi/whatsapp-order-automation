@@ -11,7 +11,7 @@ namespace Domain.Catalog
         public Guid MenuCategoryId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public bool IsActive { get; set; }
-        public bool IsAvaiable { get; set; }
+        public bool IsActive { get; set; } = true;
+        public bool IsAvailable { get; set; } = true;
     }
 }
