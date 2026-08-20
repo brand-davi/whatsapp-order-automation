@@ -9,7 +9,7 @@ namespace Domain.Printing
         public Guid Id { get; set; }
         public Guid RestaurantId { get; set; }
         public Guid OrderId { get; set; }
-        public PrintJobStatus Status { get; set; }
+        public PrintJobStatus Status { get; set; } = PrintJobStatus.Pending;
         public int AttemptCount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? PrintedAt { get; set; }

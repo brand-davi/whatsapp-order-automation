@@ -13,7 +13,7 @@ namespace Domain.Orders
 
         public Guid CustomerId { get; set; }
 
-        public OrderStatus Status { get; set; }
+        public OrderStatus Status { get; set; } = OrderStatus.Draft;
 
         public OrderType? Type { get; set; }
 

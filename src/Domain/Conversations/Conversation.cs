@@ -10,7 +10,7 @@ namespace Domain.Conversations
         public Guid RestaurantId { get; set; }
         public Guid CustomerId { get; set; }
         public Guid? CurrentOrderId { get; set; }
-        public ConversationState State { get; set; }
+        public ConversationState State { get; set; } = ConversationState.Started;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime LastInteractionAt { get; set; }
     }

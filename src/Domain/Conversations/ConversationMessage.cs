@@ -13,6 +13,6 @@ namespace Domain.Conversations
         public MessageDirection Direction { get; set; }
         public MessageType Type { get; set; }
         public string? Content { get; set; }
-        public DateTime CreateAt { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
