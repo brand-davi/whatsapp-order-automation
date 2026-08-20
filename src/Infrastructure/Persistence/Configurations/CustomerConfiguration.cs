@@ -18,7 +18,7 @@ namespace Infrastructure.Persistence.Configurations
 
             builder.Property(customer => customer.WhatsAppNumber)
                 .IsRequired()
-                .HasMaxLength(13);
+                .HasMaxLength(20);
 
             builder.Property(customer => customer.Name).HasMaxLength(150);
 

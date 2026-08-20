@@ -10,7 +10,7 @@ using Domain.Restaurants;
 using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Persistence
 {
-    public class AppDbContext: DbContext
+    public sealed class AppDbContext: DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -29,8 +29,9 @@ namespace Infrastructure.Persistence
         public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+            
         }
     }
 

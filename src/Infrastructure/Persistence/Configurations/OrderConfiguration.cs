@@ -14,6 +14,12 @@ namespace Infrastructure.Persistence.Configurations
 
             builder.HasKey(order => order.Id);
 
+            builder.Ignore(order => order.Subtotal);
+
+            builder.Ignore(order => order.Total);
+
+            builder.Ignore(order => order.ChangeAmount);
+
             builder.Property(order => order.Status)
                 .IsRequired();
 

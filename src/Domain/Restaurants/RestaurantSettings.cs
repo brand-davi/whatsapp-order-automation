@@ -8,6 +8,6 @@ namespace Domain.Restaurants
     {
         public Guid Id { get; set; }
         public Guid RestaurantId { get; set; }
-        public bool AutomationEnabled { get; set; }
+        public bool AutomationEnabled { get; set; } = false;
     }
 }

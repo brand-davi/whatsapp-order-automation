@@ -19,7 +19,7 @@ namespace Infrastructure.Persistence.Configurations
                 .HasMaxLength(150); // Define a propriedade "Name" como obrigatória e com tamanho máximo de 150 caracteres
 
             builder.Property(restaurant=> restaurant.WhatsAppNumber).IsRequired()
-                .HasMaxLength(13); 
+                .HasMaxLength(20); 
 
             builder.Property(restaurant => restaurant.IsActive).IsRequired();
 
