@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Domain.Conversations
+﻿namespace Domain.Conversations
 {
     public enum ConversationState
     {
@@ -10,6 +6,6 @@ namespace Domain.Conversations
         CollectingOrder = 2,
         AwaitingConfirmation = 3,
         Completed = 4,
-        Canceled = 5
+        Cancelled = 5
     }
 }

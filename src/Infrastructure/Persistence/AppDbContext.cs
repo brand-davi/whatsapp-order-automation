@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Application.Abstractions.Persistence;
 using Domain.Catalog;
 using Domain.Conversations;
 using Domain.Customers;
@@ -10,7 +8,7 @@ using Domain.Restaurants;
 using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.Persistence
 {
-    public sealed class AppDbContext: DbContext
+    public sealed class AppDbContext : DbContext, IUnitOfWork
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -31,7 +29,7 @@ namespace Infrastructure.Persistence
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-            
+
         }
     }
 
